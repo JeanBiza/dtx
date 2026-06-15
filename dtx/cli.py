@@ -50,6 +50,37 @@ def add_file(filepath):
     save_registry(registry)
     print("Updated dtx.json registry.")
 
+def remove_file(filename):
+    if not VAULT_DIR.exists():
+        print("Error: Vault is not initialized.")
+        return
+
+    registry = load_registry()
+    
+    if filename not in registry:
+        print(f"Error: '{filename}' is not tracked in the vault.")
+        return
+
+    original_path_str = registry[filename]
+    original_path = Path(original_path_str)
+    vault_file = VAULT_DIR / filename
+
+    if original_path.is_symlink():
+        original_path.unlink()
+        print(f"Removed symlink: {original_path}")
+    elif original_path.exists():
+        print(f"Warning: '{original_path}' exists but is not a symlink. Skipping symlink deletion.")
+
+    if vault_file.exists():
+        shutil.move(str(vault_file), str(original_path))
+        print(f"Restored file to original location: {original_path}")
+    else:
+        print(f"Warning: File '{filename}' was missing from the vault. It might have been deleted manually.")
+
+    del registry[filename]
+    save_registry(registry)
+    print(f"Stopped tracking '{filename}'. Updated dtx.json registry.")
+
 def apply_vault():
     if not VAULT_DIR.exists():
         print("Error: Vault is not initialized.")
@@ -61,6 +92,8 @@ def apply_vault():
         return
 
     print("Applying dotfiles from vault...")
+    
+    #TODO apply
 
 def main():
     parser = argparse.ArgumentParser(
@@ -76,6 +109,10 @@ def main():
     add_parser = subparsers.add_parser("add", help="Add a file to the vault")
     add_parser.add_argument("file", help="Path to the file to track")
 
+    # Command: remove
+    remove_parser = subparsers.add_parser("remove", help="Stop tracking a file and restore it to its original location")
+    remove_parser.add_argument("file", help="Name of the file to stop tracking (e.g., test.txt)")
+
     # Command: apply
     subparsers.add_parser("apply", help="Apply tracked dotfiles to the system")
 
@@ -87,6 +124,9 @@ def main():
         add_file(args.file)
     elif args.command == "apply":
         apply_vault()
+    elif args.command == "remove":
+        filename = Path(args.file).name
+        remove_file(filename)
     else:
         parser.print_help()
 
