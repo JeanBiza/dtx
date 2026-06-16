@@ -57,6 +57,24 @@ def show_status():
     
     print("\nSystem check complete.")
 
+def show_list():
+    if not VAULT_DIR.exists():
+        print("Error: Vault is not initialized.")
+        return
+
+    registry = load_registry()
+    
+    if not registry:
+        print("No files are currently being tracked. The vault is empty.")
+        print("Use 'dtx add <file>' to start tracking.")
+        return
+
+    print("List of all tracked dotfiles:\n")
+
+    for filename in registry.items():
+        print(f"- {filename[0]}")
+    print()
+
 def add_file(filepath):
     source_path = Path(filepath).resolve()
     
@@ -137,10 +155,13 @@ def main():
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
 
     # Command: init
-    init_parser = subparsers.add_parser("init", help="Initialize the dotfiles directory")
+    subparsers.add_parser("init", help="Initialize the dotfiles directory")
 
     # Command: status
     subparsers.add_parser("status", help="Show the status of all tracked dotfiles")
+
+    # Command: list
+    subparsers.add_parser("list", help="Show all tracked dotfiles")
     
     # Command: add
     add_parser = subparsers.add_parser("add", help="Add a file to the vault")
@@ -159,6 +180,8 @@ def main():
         init_vault()
     elif args.command == "status":
         show_status()
+    elif args.command == "list":
+        show_list()
     elif args.command == "add":
         add_file(args.file)
     elif args.command == "apply":
