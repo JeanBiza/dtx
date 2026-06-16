@@ -10,4 +10,10 @@ readme = "README.md"
 requires-python = ">=3.8"
 
 [project.scripts]
-dtx = "dtx.cli:main"source .venv/bin/activate   
+dtx = "dtx.cli:main"
+
+[project.optional-dependencies]
+dev = ["pytest>=7.0"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
