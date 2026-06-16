@@ -1,5 +1,7 @@
 # dtx
 
+![Tests](https://github.com/JeanBiza/dtx/actions/workflows/tests.yml/badge.svg)
+
 A minimalist dotfiles manager for the command line.
 
 `dtx` keeps your configuration files in one central vault, replaces their
