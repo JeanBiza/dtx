@@ -23,6 +23,40 @@ def init_vault():
         VAULT_DIR.mkdir(parents=True)
         print(f"Initialized empty vault at: {VAULT_DIR}")
 
+def show_status():
+    if not VAULT_DIR.exists():
+        print("Error: Vault is not initialized.")
+        return
+
+    registry = load_registry()
+    
+    if not registry:
+        print("No files are currently being tracked. The vault is empty.")
+        print("Use 'dtx add <file>' to start tracking.")
+        return
+
+    GREEN = '\033[92m'
+    RED = '\033[91m'
+    RESET = '\033[0m'
+
+    print("Currently tracked dotfiles:\n")
+
+    for filename, original_path_str in registry.items():
+        original_path = Path(original_path_str)
+        vault_path = VAULT_DIR / filename
+        
+        if not vault_path.exists():
+            status_tag = f"{RED}[MISSING IN VAULT]{RESET}"
+        elif not original_path.is_symlink():
+            status_tag = f"{RED}[BROKEN LINK]{RESET}"
+        else:
+            status_tag = f"{GREEN}[TRACKED]{RESET}"
+
+        print(f"  {status_tag} {filename}")
+        print(f"      Target: {original_path}")
+    
+    print("\nSystem check complete.")
+
 def add_file(filepath):
     source_path = Path(filepath).resolve()
     
@@ -104,6 +138,9 @@ def main():
 
     # Command: init
     init_parser = subparsers.add_parser("init", help="Initialize the dotfiles directory")
+
+    # Command: status
+    subparsers.add_parser("status", help="Show the status of all tracked dotfiles")
     
     # Command: add
     add_parser = subparsers.add_parser("add", help="Add a file to the vault")
@@ -120,6 +157,8 @@ def main():
 
     if args.command == "init":
         init_vault()
+    elif args.command == "status":
+        show_status()
     elif args.command == "add":
         add_file(args.file)
     elif args.command == "apply":
