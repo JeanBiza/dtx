@@ -133,6 +133,7 @@ def remove_file(filename):
     save_registry(registry)
     print(f"Stopped tracking '{filename}'. Updated dtx.json registry.")
 
+ 
 def apply_vault():
     if not VAULT_DIR.exists():
         print("Error: Vault is not initialized.")
@@ -142,10 +143,47 @@ def apply_vault():
     if not registry:
         print("Registry is empty. Nothing to apply.")
         return
-
-    print("Applying dotfiles from vault...")
-    
-    #TODO apply
+ 
+    GREEN = '\033[92m'
+    YELLOW = '\033[93m'
+    RED = '\033[91m'
+    RESET = '\033[0m'
+ 
+    print("Applying dotfiles from vault...\n")
+ 
+    linked = 0
+    up_to_date = 0
+    skipped = 0
+ 
+    for filename, original_path_str in registry.items():
+        vault_path = VAULT_DIR / filename
+        original_path = Path(original_path_str)
+ 
+        if not vault_path.exists():
+            print(f"  {RED}[SKIP]{RESET} '{filename}': missing from vault, can't apply.")
+            skipped += 1
+            continue
+ 
+        if original_path.is_symlink():
+            if original_path.resolve() == vault_path.resolve():
+                print(f"  {GREEN}[OK]{RESET} '{filename}': already linked correctly.")
+                up_to_date += 1
+                continue
+            original_path.unlink()
+            print(f"  {YELLOW}[FIX]{RESET} '{filename}': replaced a stale symlink.")
+        elif original_path.exists():
+            print(f"  {RED}[SKIP]{RESET} '{filename}': a real file already exists at "
+                  f"'{original_path}'. Remove or back it up, then run 'dtx apply' again.")
+            skipped += 1
+            continue
+ 
+        original_path.parent.mkdir(parents=True, exist_ok=True)
+        original_path.symlink_to(vault_path)
+        print(f"  {GREEN}[LINKED]{RESET} '{filename}' -> {original_path}")
+        linked += 1
+ 
+    print(f"\nDone. {linked} linked, {up_to_date} already up to date, {skipped} skipped.")
+ 
 
 def main():
     parser = argparse.ArgumentParser(
