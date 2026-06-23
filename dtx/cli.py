@@ -77,7 +77,7 @@ def show_list():
 
 def add_file(filepath):
     source_path = Path(filepath).resolve()
-    
+
     if not source_path.exists() or not source_path.is_file():
         print(f"Error: '{source_path}' does not exist or is not a regular file.")
         return
@@ -86,21 +86,24 @@ def add_file(filepath):
         print("Error: Vault is not initialized. Run 'dtx init' first.")
         return
 
-    path = VAULT_DIR / source_path.name
-    if path.exists():
+    relative = source_path.relative_to("/")
+    vault_path = VAULT_DIR / relative
+
+    if vault_path.exists():
         print(f"Error: '{source_path.name}' is already tracked in the vault.")
         return
 
-    shutil.move(str(source_path), str(path))
-    print(f"Moved to vault: {path}")
+    vault_path.parent.mkdir(parents=True, exist_ok=True)
+    shutil.move(str(source_path), str(vault_path))
+    print(f"Moved to vault: {vault_path}")
 
-    source_path.symlink_to(path)
-    print(f"Created symlink: {source_path} -> {path}")
+    source_path.symlink_to(vault_path)
+    print(f"Created symlink: {source_path} -> {vault_path}")
 
     registry = load_registry()
-    registry[source_path.name] = str(source_path)
+    registry[str(relative)] = str(source_path)
     save_registry(registry)
-    print("Updated dtx.json registry.")
+    print("Updated dtx registry.")
 
 def remove_file(filename):
     if not VAULT_DIR.exists():
@@ -124,6 +127,7 @@ def remove_file(filename):
         print(f"Warning: '{original_path}' exists but is not a symlink. Skipping symlink deletion.")
 
     if vault_file.exists():
+        original_path.parent.mkdir(parents=True, exist_ok=True)
         shutil.move(str(vault_file), str(original_path))
         print(f"Restored file to original location: {original_path}")
     else:
@@ -225,8 +229,9 @@ def main():
     elif args.command == "apply":
         apply_vault()
     elif args.command == "remove":
-        filename = Path(args.file).name
-        remove_file(filename)
+        source_path = Path(args.file).resolve()
+        relative = str(source_path.relative_to("/"))
+        remove_file(relative)
     else:
         parser.print_help()
 

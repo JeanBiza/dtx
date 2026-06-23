@@ -41,19 +41,19 @@ def test_init_vault_does_not_fail_if_already_exists(initialized_vault, capsys):
 def test_add_file_moves_file_and_creates_symlink(initialized_vault, tmp_path, capsys):
     source = tmp_path / "myconf"
     source.write_text("hello")
- 
+
     cli.add_file(str(source))
- 
-    vault_copy = initialized_vault / "myconf"
+
+    relative = source.relative_to("/")
+    vault_copy = initialized_vault / relative
     assert vault_copy.exists()
     assert vault_copy.read_text() == "hello"
- 
+
     assert source.is_symlink()
     assert source.resolve() == vault_copy.resolve()
- 
+
     registry = cli.load_registry()
-    assert registry["myconf"] == str(source)
- 
+    assert registry[str(relative)] == str(source) 
  
 def test_add_file_fails_if_vault_not_initialized(vault, tmp_path, capsys):
     source = tmp_path / "myconf"
@@ -79,16 +79,13 @@ def test_add_file_fails_if_already_tracked(initialized_vault, tmp_path, capsys):
     source = tmp_path / "myconf"
     source.write_text("hello")
     cli.add_file(str(source))
- 
-    other_source = tmp_path / "other_dir" / "myconf"
-    other_source.parent.mkdir()
-    other_source.write_text("world")
- 
-    cli.add_file(str(other_source))
- 
+    source.unlink()
+    source.write_text("hello again")
+
+    cli.add_file(str(source))
+
     out = capsys.readouterr().out
     assert "already tracked" in out
- 
  
 # --- remove -----------------------------------------------------------
  
@@ -96,9 +93,10 @@ def test_remove_file_restores_original_location(initialized_vault, tmp_path):
     source = tmp_path / "myconf"
     source.write_text("hello")
     cli.add_file(str(source))
- 
-    cli.remove_file("myconf")
- 
+
+    relative = str(source.relative_to("/"))
+    cli.remove_file(relative)
+
     assert source.exists()
     assert not source.is_symlink()
     assert source.read_text() == "hello"
