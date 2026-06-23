@@ -1,5 +1,6 @@
 # dtx
 
+[![License: MIT](https://img.shields.io/badge/license-MIT-green?style=flat)](LICENSE)
 ![Tests](https://github.com/JeanBiza/dtx/actions/workflows/tests.yml/badge.svg)
 
 A minimalist dotfiles manager for the command line.
