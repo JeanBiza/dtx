@@ -71,8 +71,8 @@ def show_list():
 
     print("List of all tracked dotfiles:\n")
 
-    for filename in registry.items():
-        print(f"- {filename[0]}")
+    for filename in registry:
+        print(f"- {filename}")
     print()
 
 def add_file(filepath):
@@ -229,9 +229,27 @@ def main():
     elif args.command == "apply":
         apply_vault()
     elif args.command == "remove":
-        source_path = Path(args.file).resolve()
-        relative = str(source_path.relative_to("/"))
-        remove_file(relative)
+        arg = args.file
+        registry = load_registry()
+
+        if arg in registry:
+            remove_file(arg)
+        else:
+            source_path = Path(arg).expanduser().resolve()
+            relative = str(source_path.relative_to("/"))
+            if relative in registry:
+                remove_file(relative)
+            else:
+                matches = [k for k in registry if Path(k).name == arg]
+                if len(matches) == 1:
+                    remove_file(matches[0])
+                elif len(matches) > 1:
+                    print(f"Ambiguous: '{arg}' matches multiple tracked files:")
+                    for m in matches:
+                        print(f"  {m}")
+                    print("Use the full path to specify which one.")
+                else:
+                    print(f"Error: '{arg}' is not tracked in the vault")
     else:
         parser.print_help()
 
