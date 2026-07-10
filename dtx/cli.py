@@ -137,6 +137,20 @@ def remove_file(filename):
     save_registry(registry)
     print(f"Stopped tracking '{filename}'. Updated dtx.json registry.")
 
+def untrack_file(filename):
+    if not VAULT_DIR.exists():
+        print("Error: Vault is not initialized.")
+        return
+
+    registry = load_registry()
+
+    if filename not in registry:
+        print(f"Error: '{filename}' is not tracked in the vault.")
+        return
+
+    del registry[filename]
+    save_registry(registry)
+    print(f"Stopped tracking '{filename}' (file left in vault, symlink kept).")
  
 def apply_vault():
     if not VAULT_DIR.exists():
@@ -213,6 +227,10 @@ def main():
     remove_parser = subparsers.add_parser("remove", help="Stop tracking a file and restore it to its original location")
     remove_parser.add_argument("file", help="Name of the file to stop tracking (e.g., test.txt)")
 
+    # Command: untrack
+    untrack_parser = subparsers.add_parser("untrack", help="Remove a file from the registry without restoring it")
+    untrack_parser.add_argument("file", help="Name of the file to untrack")
+
     # Command: apply
     subparsers.add_parser("apply", help="Apply tracked dotfiles to the system")
 
@@ -243,6 +261,28 @@ def main():
                 matches = [k for k in registry if Path(k).name == arg]
                 if len(matches) == 1:
                     remove_file(matches[0])
+                elif len(matches) > 1:
+                    print(f"Ambiguous: '{arg}' matches multiple tracked files:")
+                    for m in matches:
+                        print(f"  {m}")
+                    print("Use the full path to specify which one.")
+                else:
+                    print(f"Error: '{arg}' is not tracked in the vault")
+    elif args.command == "untrack":
+        arg = args.file
+        registry = load_registry()
+
+        if arg in registry:
+            untrack_file(arg)
+        else:
+            source_path = Path(arg).expanduser().resolve()
+            relative = str(source_path.relative_to("/"))
+            if relative in registry:
+                untrack_file(relative)
+            else:
+                matches = [k for k in registry if Path(k).name == arg]
+                if len(matches) == 1:
+                    untrack_file(matches[0])
                 elif len(matches) > 1:
                     print(f"Ambiguous: '{arg}' matches multiple tracked files:")
                     for m in matches:

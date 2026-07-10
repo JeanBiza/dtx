@@ -117,6 +117,38 @@ def test_remove_file_fails_if_vault_not_initialized(vault, capsys):
     assert "not initialized" in out
  
  
+
+# --- untrack ----------------------------------------------------------
+
+def test_untrack_removes_from_registry_only(initialized_vault, tmp_path):
+    source = tmp_path / "myconf"
+    source.write_text("hello")
+    cli.add_file(str(source))
+
+    relative = str(source.relative_to("/"))
+    cli.untrack_file(relative)
+
+    assert cli.load_registry() == {}
+    assert source.is_symlink()
+    vault_copy = initialized_vault / relative
+    assert vault_copy.exists()
+
+
+def test_untrack_fails_if_not_tracked(initialized_vault, capsys):
+    cli.untrack_file("nope.txt")
+
+    out = capsys.readouterr().out
+    assert "not tracked" in out
+
+
+def test_untrack_fails_if_vault_not_initialized(vault, capsys):
+    cli.untrack_file("nope.txt")
+
+    out = capsys.readouterr().out
+    assert "not initialized" in out
+
+
+
 # --- status / list -----------------------------------------------------
  
 def test_show_status_reports_no_vault(vault, capsys):
